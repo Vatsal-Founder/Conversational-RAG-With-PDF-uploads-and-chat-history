@@ -6,6 +6,7 @@ langchain_openai
 dotenv
 langchain_text_splitters
 chromadb
+pysqlite3-binary
 sentence_transformers
 langchain_huggingface
 faiss-cpu
