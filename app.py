@@ -3,6 +3,14 @@ import os
 from dotenv import load_dotenv
 load_dotenv()
 
+# must be before: from langchain.vectorstores import Chroma
+try:
+    import pysqlite3  # uses a modern SQLite (>= 3.35)
+    import sys
+    sys.modules["sqlite3"] = sys.modules.pop("pysqlite3")
+except Exception:
+    pass
+
 os.environ["LANGCHAIN_API_KEY"] = os.getenv("LANGCHAIN_API_KEY")    
 os.environ["LANGCHAIN_TRACING_V2"] = "true"
 os.environ["LANGCHAIN_PROJECT"]= "RAG Document Q&A"
