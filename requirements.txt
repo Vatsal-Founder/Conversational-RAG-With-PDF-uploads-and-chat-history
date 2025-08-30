@@ -5,7 +5,7 @@ langchain-community
 langchain_openai
 dotenv
 langchain_text_splitters
-chromadb>= 3.35.0
+chromadb= 3.35.0
 sentence_transformers
 langchain_huggingface
 faiss-cpu
