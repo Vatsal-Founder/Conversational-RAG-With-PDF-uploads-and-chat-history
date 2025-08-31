@@ -3,14 +3,6 @@ import os
 from dotenv import load_dotenv
 load_dotenv()
 
-# must be before: from langchain.vectorstores import Chroma
-try:
-    import pysqlite3  # uses a modern SQLite (>= 3.35)
-    import sys
-    sys.modules["sqlite3"] = sys.modules.pop("pysqlite3")
-except Exception:
-    pass
-
 os.environ["LANGCHAIN_API_KEY"] = os.getenv("LANGCHAIN_API_KEY")    
 os.environ["LANGCHAIN_TRACING_V2"] = "true"
 os.environ["LANGCHAIN_PROJECT"]= "RAG Document Q&A"
@@ -23,7 +15,8 @@ from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_core.prompts import ChatPromptTemplate, PromptTemplate, MessagesPlaceholder
 from langchain.chains.combine_documents import create_stuff_documents_chain
 from langchain.document_loaders import PyPDFLoader
-from langchain.vectorstores import Chroma
+
+from langchain.vectorstores import FAISS
 from langchain.chains import create_retrieval_chain, create_history_aware_retriever
 from langchain_core.chat_history import BaseChatMessageHistory
 from langchain_community.chat_message_histories import ChatMessageHistory
@@ -37,7 +30,7 @@ st.write("Upload PDFs and chat with their content")
 api_key = st.text_input("Enter your Groq API key:", type="password")
 
 if api_key:
-    llm=ChatGroq(groq_api_key=api_key, model_name="llama3-70b-8192")
+    llm=ChatGroq(groq_api_key=api_key, model_name="openai/gpt-oss-20b")
 
     session_id= st.text_input("Session ID", value="default_session")
 
@@ -60,7 +53,7 @@ if api_key:
 
         text_splitter = RecursiveCharacterTextSplitter(chunk_size=5000, chunk_overlap=500)
         splits = text_splitter.split_documents(documents)
-        vectorstore = Chroma.from_documents(documents=splits, embedding=OpenAIEmbeddings())
+        vectorstore =  FAISS.from_documents(documents=splits, embedding=OpenAIEmbeddings())
         retriever = vectorstore.as_retriever()
 
         contextualize_q_system_prompt=(
