@@ -10,7 +10,7 @@ End‑to‑end **Q\&A RAG** application that remembers prior turns and answers w
 
 > Repo: `Vatsal-Founder/Conversational-RAG-With-PDF-uploads-and-chat-history`
 
-Link: 
+* Link: https://conversational-rag-with-pdf-uploads-and-chat-history-mdwwildu2.streamlit.app 
 ---
 
 ## Features
