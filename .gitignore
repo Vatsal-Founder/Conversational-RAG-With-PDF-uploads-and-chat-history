@@ -1,0 +1,10 @@
+.env
+.venv/
+.DS_Store
+__pycache__/
+*.pyc
+*.pyo
+.chroma/
+chroma_db/
+uploads/
+.ipynb_checkpoints/
