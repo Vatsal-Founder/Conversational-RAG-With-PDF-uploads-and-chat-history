@@ -6,6 +6,8 @@
 
 Multi-document **conversational RAG** with **voice input/output**, session memory, and per-query performance tracking. Upload PDFs, ask questions by text or voice, and get answers grounded in your documents.
 
+Demo Link: https://conversational-rag-with-pdf-uploads-and-chat-history-kambz5zqg.streamlit.app
+
 > **Key features:** Whisper speech-to-text input, gTTS voice responses, multi-turn memory, per-query latency & retrieval tracking.
 
 ---
