@@ -1,148 +1,166 @@
-# Conversational RAG — PDF Uploads & Chat History
+# Conversational RAG — PDF Chat with Voice
 
-End‑to‑end **Q\&A RAG** application that remembers prior turns and answers with context from your uploaded **PDFs**.
+[![Python](https://img.shields.io/badge/Python-3.10+-3776AB?logo=python)](https://python.org)
+[![Whisper](https://img.shields.io/badge/Voice-OpenAI%20Whisper-412991?logo=openai)](https://openai.com/research/whisper)
+[![LangChain](https://img.shields.io/badge/Framework-LangChain-1C3C3C)](https://langchain.com)
 
-* **Groq** for fast, low‑latency generation (e.g., Llama‑3 family)
-* **OpenAI embeddings** for retrieval quality
-* **Chroma** as the vector store (persistent)
-* **LangChain** for orchestration + **LangSmith** for tracing
-* **Conversation memory** so follow‑ups “just work”
+Multi-document **conversational RAG** with **voice input/output**, session memory, and per-query performance tracking. Upload PDFs, ask questions by text or voice, and get answers grounded in your documents.
 
-> Repo: `Vatsal-Founder/Conversational-RAG-With-PDF-uploads-and-chat-history`
+> **Key features:** Whisper speech-to-text input, gTTS voice responses, multi-turn memory, per-query latency & retrieval tracking.
 
-* Link: https://conversational-rag-with-pdf-uploads-and-chat-history-mdwwildu2.streamlit.app 
 ---
 
 ## Features
 
-* 📤 **Multi‑PDF upload**: drag & drop any number of PDFs; incremental indexing.
-* 🧠 **Conversational memory**: replies consider previous messages within the same session.
-* ⚡ **Groq LLM**: low‑latency chat models via `GROQ_API_KEY`.
-* 🔎 **OpenAI embeddings**: strong recall with `text-embedding-3-*`.
-* 🗂️ **Chroma**: local persistent store you can mount/backup.
-* 🧪 **LangSmith**: opt‑in traces for runs, latencies, and chains.
+- 📤 **Multi-PDF upload**: drag & drop any number of PDFs, auto-chunked and indexed
+- 🧠 **Conversational memory**: follow-up questions use full chat history
+- 🎙️ **Voice input**: ask questions by speaking (OpenAI Whisper STT)
+- 🔊 **Voice output**: hear answers read aloud (gTTS text-to-speech)
+- ⚡ **Free demo tier**: 10 questions/session, no API key needed for visitors
+- 📊 **Per-query eval tracking**: latency, chunks retrieved, and response length logged in sidebar
 
 ---
 
 ## Architecture
 
 ```
-[Browser UI]
-   ↓ (WebSocket/HTTP)
-[App (Streamlit or FastAPI)]
-   ├─ Session Manager (per user/session_id)
-   ├─ Memory (ChatHistory / Summary)
-   ├─ Ingestion (PDF → chunks → embeddings → Chroma)
-   ├─ Retrieval (k docs from Chroma)
-   └─ Generator (Groq LLM)
-            ↓
-     [Answer + cited sources]
+                          ┌──────────────────────────┐
+                          │     Streamlit UI          │
+                          │  Text Input / Voice Input │
+                          └────────┬─────────────────┘
+                                   │
+                    ┌──────────────┴──────────────┐
+                    ▼                             ▼
+            [Text Question]              [Audio Recording]
+                    │                             │
+                    │                    [Whisper STT API]
+                    │                             │
+                    └──────────┬──────────────────┘
+                               ▼
+                    [History-Aware Retriever]
+                    (reformulate with chat history)
+                               │
+                               ▼
+                    [FAISS Vector Store]
+                    (retrieve top-k chunks)
+                               │
+                               ▼
+                    [Groq LLM — Llama 3.3 70B]
+                    (generate grounded answer)
+                               │
+                    ┌──────────┴──────────────┐
+                    ▼                         ▼
+             [Text Response]          [gTTS Voice Response]
+                    │                         │
+                    └──────────┬──────────────┘
+                               ▼
+                    [📊 Log: latency, chunks, length]
+```
+
+---
+
+## Per-Query Performance Tracking
+
+Every question is tracked with real-time metrics visible in the sidebar:
+
+| Metric | What It Shows |
+|--------|--------------|
+| ⏱️ **Latency** | End-to-end response time in milliseconds |
+| 📄 **Chunks retrieved** | Number of document chunks used for context |
+| 📏 **Response length** | Character count of the generated answer |
+
+This helps identify slow queries, insufficient retrieval, or overly verbose responses — key signals for tuning your RAG pipeline.
+
+---
+
+## Project Structure
+
+```
+.
+├── app.py                # Main Streamlit app (chat + voice + tracking)
+├── requirements.txt
+├── .env.example
+├── .gitignore
+├── LICENSE
+└── README.md
 ```
 
 ---
 
 ## Quick Start
 
-### 1) Setup
+### 1) Install
 
 ```bash
 git clone https://github.com/Vatsal-Founder/Conversational-RAG-With-PDF-uploads-and-chat-history.git
 cd Conversational-RAG-With-PDF-uploads-and-chat-history
-python -m venv .venv && source .venv/bin/activate   # Windows: .venv\Scripts\activate
+python -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
-cp .env.example .env  # create if missing
 ```
 
-### 2) Environment variables (minimum)
+### 2) Configure
 
-```ini
-# LLM (Groq)
-GROQ_API_KEY=your_groq_key
-GROQ_MODEL=llama-3.1-8b  # example
-
-# Embeddings (OpenAI)
-OPENAI_API_KEY=your_openai_key
-EMBEDDINGS_MODEL=text-embedding-3-small
-
-
-# LangSmith (optional)
-LANGCHAIN_TRACING_V2=true
-LANGCHAIN_API_KEY=your_langsmith_key
-LANGCHAIN_PROJECT=conv-rag
+```bash
+cp .env.example .env
+# Fill in your API keys
 ```
 
-> Defaults favor local development: in‑memory chat history and a local Chroma folder.
+| Key | Required For | Free Tier |
+|-----|-------------|-----------|
+| `GROQ_API_KEY` | LLM generation | Yes |
+| `OPENAI_API_KEY` | Voice input (Whisper) | Paid (voice is optional) |
+
+Voice features are **optional** — the app works fully with text-only if no OpenAI key is provided.
 
 ### 3) Run
-
-Choose the entrypoint that matches your `app.py`:
-
-**Streamlit UI**
 
 ```bash
 streamlit run app.py
 ```
 
-Open [http://localhost:8501](http://localhost:8501). Upload PDFs, start a chat, and ask follow‑ups.
-
-
----
-
-## Using it
-
-1. **Upload PDFs** (one at a time). The app chunks the files and updates the Chroma index.
-2. **Ask a question.** The retriever pulls relevant chunks from the combined corpus.
-3. **Follow up naturally.** Memory keeps prior turns in context for the same session.
-4. **Inspect traces** in LangSmith (if enabled).
-
-> Tip: Give your chat a **session name/ID** so you can come back later. Memory TTL controls how long we keep past turns.
+1. Upload PDFs in the sidebar → click **Index Documents**
+2. Ask questions via the chat input or the voice recorder
+3. Toggle **voice responses** in the sidebar to hear answers
+4. Check per-query metrics in the sidebar under **Query Performance**
 
 ---
 
-## Pre‑loading documents (optional)
+## Voice Features
 
+### Voice Input (Speech-to-Text)
+Uses **OpenAI Whisper API** via Streamlit's native `st.audio_input` widget. Click the microphone, speak your question, and it gets transcribed and sent to the RAG pipeline. Supports multiple languages.
 
-Re‑run ingestion whenever PDFs change.
+### Voice Output (Text-to-Speech)
+Uses **gTTS** (Google Text-to-Speech) — free, no API key required. Toggle it on in the sidebar. Responses auto-play in the browser after generation.
+
+### Graceful Degradation
+If `OPENAI_API_KEY` is not set, voice input is simply hidden and the app works as a text-only chat. No errors, no broken UI.
 
 ---
 
-## Deployment
+## Tech Stack
 
-### Docker (recommended)
-
-**Dockerfile (example)**
-
-```dockerfile
-FROM python:3.11-slim
-WORKDIR /app
-COPY requirements.txt ./
-RUN pip install --no-cache-dir -r requirements.txt
-COPY . .
-# Streamlit by default
-CMD ["streamlit", "run", "app.py", "--server.port", "8501", "--server.address", "0.0.0.0"]
-# For FastAPI instead:
-# CMD ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "8000"]
-```
-
-**Build & run**
-
-```bash
-docker build -t conv-rag .
-docker run -p 8501:8501 \
-  --env-file .env \
-  -v $(pwd)/.chroma:/app/.chroma \
-  -v $(pwd)/uploads:/app/uploads \
-  conv-rag
-```
+| Component | Technology |
+|-----------|-----------|
+| LLM | Groq (Llama 3.3 70B) |
+| Embeddings | HuggingFace (all-MiniLM-L6-v2) |
+| Vector Store | FAISS (in-memory) |
+| Voice Input | OpenAI Whisper API |
+| Voice Output | gTTS |
+| Orchestration | LangChain |
+| UI | Streamlit |
 
 ---
 
 ## Configuration Tips
 
-* **Embeddings**: start with `text-embedding-3-small` for speed; upgrade to `text-embedding-3-large` for best recall.
-* **Chunking**: \~1000 tokens with 150 overlap is a good default; adjust for short PDFs.
-* **Memory**: `inmemory` is simplest; use `redis` for multi‑instance deployments.
-* **Sources**: surface the top‑k chunks and metadata in your UI for transparency.
+- **Chunk size**: 1000 tokens with 200 overlap works well for general documents
+- **top_k**: default is 4 chunks; increase to 6–8 for longer documents
+- **Voice**: Whisper works best with clear audio and minimal background noise
+- **Memory**: in-memory session history resets on app restart; suitable for demos
 
 ---
 
+## License
+
+GPL-3.0 © Vatsal Kansara
